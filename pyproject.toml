@@ -1,0 +1,25 @@
+[project]
+name = "graphmem"
+version = "0.2.2"
+description = "Knowledge-graph memory for Claude — MCP server + CLI, Oracle ADB backend with in-DB ONNX embeddings"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = ["oracledb>=4.0", "mcp>=1.20"]
+
+[project.optional-dependencies]
+oci = ["oci>=2.150"]          # lifecycle ops (auto-start stopped ADB)
+web = ["fastapi>=0.115", "uvicorn>=0.30"]
+
+[project.scripts]
+graphmem = "graphmem.cli:main"
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+graphmem = ["schema.sql", "static/*"]

@@ -1,0 +1,11 @@
+{
+  "name": "graphmem",
+  "owner": { "name": "Muhammed Sezer" },
+  "plugins": [
+    {
+      "name": "graphmem",
+      "source": "./",
+      "description": "Persistent cross-device knowledge-graph memory (MCP + usage skill + setup command)"
+    }
+  ]
+}

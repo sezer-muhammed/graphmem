@@ -1,0 +1,10 @@
+# secrets & local state — NEVER commit
+.env
+wallet/
+*.log
+# python
+.venv/
+__pycache__/
+*.egg-info/
+build/
+dist/

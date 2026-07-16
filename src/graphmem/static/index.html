@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>graphmem — Graph Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<style>
+/* ─── SRT design tokens (from base-react-design-template globals.css) ─── */
+:root{
+  --background:#fafafa; --foreground:#171717;
+  --page-grid-line:rgb(0 0 0 / 0.035); --page-grid-softener:rgb(250 250 250 / 0.72);
+  --ds-background-100-value:0,0%,100%; --ds-background-200-value:0,0%,98%;
+  --ds-gray-100-value:0,0%,95%; --ds-gray-200-value:0,0%,92%; --ds-gray-300-value:0,0%,90%;
+  --ds-gray-400-value:0,0%,92%; --ds-gray-500-value:0,0%,79%; --ds-gray-600-value:0,0%,66%;
+  --ds-gray-700-value:0,0%,56%; --ds-gray-800-value:0,0%,49%; --ds-gray-900-value:0,0%,30%;
+  --ds-gray-1000-value:0,0%,9%;
+  --ds-blue-100-value:212,100%,97%; --ds-blue-400-value:209,100%,90%; --ds-blue-500-value:209,100%,80%;
+  --ds-blue-700-value:212,100%,48%; --ds-blue-900-value:211,100%,42%; --ds-blue-1000-value:211,100%,15%;
+  --ds-red-100-value:0,100%,97%; --ds-red-400-value:0,90%,92%; --ds-red-700-value:358,75%,59%;
+  --ds-red-900-value:358,66%,48%; --ds-red-1000-value:355,49%,15%;
+  --ds-amber-100-value:39,100%,95%; --ds-amber-400-value:42,100%,78%; --ds-amber-500-value:38,100%,71%;
+  --ds-amber-700-value:39,100%,57%; --ds-amber-900-value:30,100%,32%; --ds-amber-1000-value:20,79%,17%;
+  --ds-green-100-value:120,60%,96%; --ds-green-400-value:122,60%,86%; --ds-green-700-value:131,41%,46%;
+  --ds-green-900-value:133,50%,32%; --ds-green-1000-value:128,29%,15%;
+  --ds-teal-100-value:169,70%,96%; --ds-teal-400-value:170,70%,85%; --ds-teal-700-value:173,80%,36%;
+  --ds-teal-900-value:174,91%,25%; --ds-teal-1000-value:171,80%,13%;
+  --ds-purple-100-value:276,100%,97%; --ds-purple-400-value:276,71%,92%; --ds-purple-700-value:272,51%,54%;
+  --ds-purple-900-value:274,71%,43%; --ds-purple-1000-value:276,100%,15%;
+  --ds-pink-100-value:330,100%,96%; --ds-pink-400-value:341,76%,91%; --ds-pink-700-value:336,80%,58%;
+  --ds-pink-900-value:336,65%,45%; --ds-pink-1000-value:333,74%,15%;
+  --ds-gray-alpha-100:#0000000d; --ds-gray-alpha-200:#00000015; --ds-gray-alpha-300:#0000001a;
+  --ds-gray-alpha-400:#00000014; --ds-gray-alpha-500:#00000036; --ds-gray-alpha-600:#00000057;
+  --ds-gray-alpha-700:#00000070; --ds-gray-alpha-800:#00000082; --ds-gray-alpha-900:#000000b3;
+  --ds-gray-alpha-1000:#000000e8;
+  --ds-background-100:hsla(var(--ds-background-100-value),1);
+  --ds-background-200:hsla(var(--ds-background-200-value),1);
+  --ds-focus-color:hsla(var(--ds-blue-700-value),1);
+  --ds-focus-ring:0 0 0 2px var(--ds-background-100),0 0 0 4px var(--ds-focus-color);
+  --link-stroke:var(--ds-gray-alpha-500);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --background:#000000; --foreground:#ededed;
+    --page-grid-line:rgb(255 255 255 / 0.055); --page-grid-softener:rgb(0 0 0 / 0.58);
+    --ds-background-100-value:0,0%,4%; --ds-background-200-value:0,0%,0%;
+    --ds-gray-100-value:0,0%,10%; --ds-gray-200-value:0,0%,12%; --ds-gray-300-value:0,0%,16%;
+    --ds-gray-400-value:0,0%,18%; --ds-gray-500-value:0,0%,27%; --ds-gray-600-value:0,0%,53%;
+    --ds-gray-700-value:0,0%,62%; --ds-gray-800-value:0,0%,72%; --ds-gray-900-value:0,0%,63%;
+    --ds-gray-1000-value:0,0%,93%;
+    --ds-blue-100-value:216,50%,12%; --ds-blue-400-value:212,78%,23%;
+    --ds-blue-700-value:212,100%,48%; --ds-blue-900-value:210,100%,66%;
+    --ds-amber-100-value:35,100%,8%; --ds-amber-400-value:35,100%,17%; --ds-amber-900-value:39,90%,50%;
+    --ds-green-100-value:136,50%,9%; --ds-green-400-value:135,70%,16%; --ds-green-900-value:131,43%,57%;
+    --ds-pink-100-value:335,32%,12%; --ds-pink-400-value:335,51%,22%; --ds-pink-900-value:341,90%,67%;
+    --ds-purple-100-value:283,30%,12%; --ds-purple-400-value:277,46%,28%; --ds-purple-900-value:275,80%,71%;
+    --ds-teal-100-value:169,78%,7%; --ds-teal-400-value:171,85%,13%; --ds-teal-900-value:174,90%,41%;
+    --ds-gray-alpha-100:#ffffff0f; --ds-gray-alpha-200:#ffffff17; --ds-gray-alpha-300:#ffffff21;
+    --ds-gray-alpha-400:#ffffff24; --ds-gray-alpha-500:#ffffff3d; --ds-gray-alpha-600:#ffffff82;
+    --ds-gray-alpha-700:#ffffff8a; --ds-gray-alpha-800:#ffffff78; --ds-gray-alpha-900:#ffffff9c;
+    --ds-gray-alpha-1000:#ffffffeb;
+    --ds-focus-color:hsla(var(--ds-blue-900-value),1);
+  }
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--ds-background-200);color:var(--foreground);height:100%}
+body{
+  height:100%;overflow:hidden;min-width:320px;
+  background:
+    radial-gradient(circle at 50% 0%, var(--page-grid-softener) 0, transparent 720px),
+    linear-gradient(var(--page-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--page-grid-line) 1px, transparent 1px),
+    var(--background);
+  background-position:center top;
+  background-size:auto,72px 72px,72px 72px,auto;
+  color:var(--foreground);
+  font-family:"Geist",Arial,Helvetica,sans-serif;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;font-feature-settings:"liga" 1,"calt" 1;
+  font-size:13px;line-height:20px;
+}
+::selection{background:hsla(var(--ds-blue-400-value),1);color:hsla(var(--ds-blue-1000-value),1)}
+.mono{font-family:"Geist Mono",ui-monospace,monospace}
+
+#space{position:fixed;inset:0;cursor:grab}
+#space:active{cursor:grabbing}
+
+/* ─── frosted chip (SRT .badge-frost) ─── */
+.badge-frost{
+  position:relative;
+  background-color:hsla(var(--ds-gray-700-value),0.07);
+  background-image:linear-gradient(to bottom,hsla(0,0%,100%,0.24) 0%,hsla(0,0%,100%,0) 52%);
+  border:1px solid hsla(var(--ds-gray-700-value),0.3);
+  -webkit-backdrop-filter:blur(7px) saturate(150%);
+  backdrop-filter:blur(7px) saturate(150%);
+  box-shadow:inset 0 1px 0 hsla(0,0%,100%,0.55),inset 0 0 0 0.5px hsla(0,0%,100%,0.18),
+    inset 0 -6px 10px -8px hsla(0,0%,0%,0.05),0 1px 2px rgb(0 0 0 / 0.07);
+}
+.ds-dot{width:1em;height:1em;border-radius:9999px;border:1px solid rgb(0 0 0 / 0.55);flex-shrink:0;display:inline-block}
+
+/* ─── header ─── */
+header{
+  position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:12px;
+  padding:12px 16px;pointer-events:none;
+}
+header>*{pointer-events:auto}
+.brand{display:flex;flex-direction:column;gap:1px;white-space:nowrap}
+.brand b{font-size:15px;font-weight:600;line-height:20px;color:hsla(var(--ds-gray-1000-value),1)}
+.brand span{font-family:"Geist Mono",monospace;font-size:11px;text-transform:uppercase;color:hsla(var(--ds-gray-700-value),1)}
+#q{
+  flex:1;max-width:480px;height:36px;padding:0 12px;font:inherit;font-size:13px;
+  color:hsla(var(--ds-gray-1000-value),1);
+  background:var(--ds-background-100);
+  border:1px solid var(--ds-gray-alpha-400);border-radius:7px;outline:none;transition:box-shadow .15s,border-color .15s;
+}
+#q::placeholder{color:hsla(var(--ds-gray-700-value),1)}
+#q:hover{border-color:var(--ds-gray-alpha-500)}
+#q:focus{box-shadow:var(--ds-focus-ring)}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;
+  border-radius:6px;font-size:11px;font-weight:500;line-height:1;
+  color:hsla(var(--ds-gray-1000-value),1);white-space:nowrap;
+}
+.chip b{font-weight:600}
+button.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 12px;
+  font:inherit;font-size:13px;font-weight:500;line-height:1;border-radius:7px;cursor:pointer;
+  outline:none;transition:background .15s,border-color .15s;
+}
+button.btn:focus-visible{box-shadow:var(--ds-focus-ring)}
+.btn-secondary{
+  border:1px solid var(--ds-gray-alpha-400);background:var(--ds-background-100);
+  color:hsla(var(--ds-gray-1000-value),1);
+}
+.btn-secondary:hover{border-color:var(--ds-gray-alpha-500);background:hsla(var(--ds-gray-100-value),1)}
+.btn-primary{
+  border:1px solid hsla(var(--ds-gray-1000-value),1);background:hsla(var(--ds-gray-1000-value),1);
+  color:var(--ds-background-100);
+}
+.btn-primary:hover{border-color:hsla(var(--ds-gray-900-value),1);background:hsla(var(--ds-gray-900-value),1)}
+
+/* ─── legend (SRT StatusSignal pattern) ─── */
+#legend{position:fixed;left:16px;bottom:16px;z-index:20;display:flex;flex-direction:column;gap:6px;
+  padding:12px;border-radius:8px;border:1px solid var(--ds-gray-alpha-400);
+  background:var(--ds-background-100);
+  box-shadow:0 1px 2px rgb(0 0 0 / 0.05),0 14px 30px -26px rgb(0 0 0 / 0.4);}
+#legend .cap{font-family:"Geist Mono",monospace;font-size:11px;text-transform:uppercase;
+  color:hsla(var(--ds-gray-700-value),1);margin-bottom:2px}
+.leg{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;
+  color:hsla(var(--ds-gray-1000-value),1);cursor:pointer;user-select:none;transition:opacity .15s}
+.leg.off{opacity:.3;text-decoration:line-through}
+.leg .ds-dot{font-size:10px}
+
+/* ─── detail panel (SRT Surface raised) ─── */
+#panel{
+  position:fixed;top:0;right:0;bottom:0;width:420px;z-index:30;overflow-y:auto;
+  background:var(--ds-background-100);
+  border-left:1px solid var(--ds-gray-alpha-400);
+  box-shadow:0 1px 2px rgb(0 0 0 / 0.05),0 14px 30px -26px rgb(0 0 0 / 0.4);
+  padding:56px 20px 24px;
+  transform:translateX(102%);transition:transform .25s cubic-bezier(.2,.9,.25,1);
+}
+#panel.open{transform:none}
+#panel .close{
+  position:absolute;top:12px;right:12px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  border:1px solid transparent;border-radius:7px;background:transparent;font-size:14px;cursor:pointer;
+  color:hsla(var(--ds-gray-900-value),1);transition:background .15s;
+}
+#panel .close:hover{background:hsla(var(--ds-gray-100-value),1)}
+#panel .kicker{font-family:"Geist Mono",monospace;font-size:11px;text-transform:uppercase;color:hsla(var(--ds-gray-700-value),1)}
+#panel h2{font-size:18px;font-weight:600;line-height:24px;margin:6px 0 2px;color:hsla(var(--ds-gray-1000-value),1)}
+#panel .slug{font-family:"Geist Mono",monospace;font-size:12px;color:hsla(var(--ds-blue-900-value),1);margin-bottom:12px}
+#panel .tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+#panel .sec{
+  font-family:"Geist Mono",monospace;font-size:11px;text-transform:uppercase;
+  color:hsla(var(--ds-gray-700-value),1);margin:20px 0 8px;padding-bottom:6px;
+  border-bottom:1px solid var(--ds-gray-alpha-300);
+}
+#panel p.body{white-space:pre-wrap;font-size:13px;line-height:20px;color:hsla(var(--ds-gray-900-value),1)}
+#panel .meta{font-size:12px;color:hsla(var(--ds-gray-700-value),1);display:grid;grid-template-columns:auto 1fr;gap:3px 14px}
+#panel .meta b{color:hsla(var(--ds-gray-1000-value),1);font-weight:500}
+.edge-row{
+  display:flex;align-items:center;gap:8px;font-size:12px;padding:7px 8px;margin:2px -8px;
+  border-radius:6px;cursor:pointer;transition:background .12s;
+}
+.edge-row:hover{background:hsla(var(--ds-gray-100-value),1)}
+.edge-row .rel{font-family:"Geist Mono",monospace;font-size:11px;color:hsla(var(--ds-amber-900-value),1);white-space:nowrap}
+.edge-row .arrow{color:hsla(var(--ds-gray-600-value),1)}
+.edge-row .to{color:hsla(var(--ds-blue-900-value),1);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.edge-row .w{margin-left:auto;font-family:"Geist Mono",monospace;font-size:11px;color:hsla(var(--ds-gray-700-value),1)}
+
+/* ─── walk HUD (SRT glass card) ─── */
+#walkhud{
+  position:fixed;left:50%;bottom:16px;transform:translate(-50%,140%);z-index:25;
+  min-width:540px;max-width:84vw;padding:14px 16px;border-radius:8px;
+  border:1px solid hsla(0,0%,0%,0.1);color:hsla(var(--ds-gray-1000-value),1);
+  background-color:hsla(0,0%,100%,0.42);
+  background-image:linear-gradient(to bottom,hsla(0,0%,100%,0.52) 0%,hsla(0,0%,100%,0.42) 100%);
+  -webkit-backdrop-filter:blur(13px) saturate(170%);
+  backdrop-filter:blur(13px) saturate(170%);
+  box-shadow:inset 0 1px 0 hsla(0,0%,100%,0.72),inset 0 0 0 0.5px hsla(0,0%,100%,0.3),
+    inset 0 -8px 12px -8px hsla(0,0%,0%,0.06),0 1px 2px rgb(0 0 0 / 0.14),0 6px 18px -12px rgb(0 0 0 / 0.4);
+  transition:transform .3s cubic-bezier(.2,.9,.25,1);
+}
+@media (prefers-color-scheme: dark){
+  #walkhud{
+    border-color:hsla(0,0%,100%,0.14);
+    background-color:hsla(0,0%,7%,0.6);
+    background-image:linear-gradient(to bottom,hsla(0,0%,100%,0.08) 0%,hsla(0,0%,100%,0) 100%);
+    box-shadow:inset 0 1px 0 hsla(0,0%,100%,0.12),0 1px 2px rgb(0 0 0 / 0.4),0 6px 18px -12px rgb(0 0 0 / 0.8);
+  }
+}
+#walkhud.on{transform:translate(-50%,0)}
+#walkhud .wk-title{display:flex;align-items:center;gap:12px;margin-bottom:8px;
+  font-family:"Geist Mono",monospace;font-size:11px;text-transform:uppercase;
+  color:hsla(var(--ds-gray-900-value),1)}
+#walkhud .wk-title .at{color:hsla(var(--ds-blue-900-value),1)}
+#walkhud .wk-title .esc{margin-left:auto;color:hsla(var(--ds-gray-700-value),1);text-transform:none}
+#trail{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px;margin-bottom:10px}
+#trail .crumb{color:hsla(var(--ds-gray-900-value),1);cursor:pointer;font-weight:500}
+#trail .crumb:hover{color:hsla(var(--ds-blue-900-value),1)}
+#trail .crumb:last-child{color:hsla(var(--ds-blue-900-value),1)}
+#trail .sep{color:hsla(var(--ds-gray-600-value),1)}
+#hops{display:flex;flex-direction:column;gap:2px;max-height:220px;overflow-y:auto}
+.hop{
+  display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:6px;
+  border:1px solid transparent;cursor:pointer;font-size:12px;transition:background .12s,border-color .12s;
+}
+.hop:hover{border-color:var(--ds-gray-alpha-400);background:var(--ds-background-100)}
+.hop .bar{height:4px;border-radius:2px;background:hsla(var(--ds-blue-700-value),1)}
+.hop .rel{font-family:"Geist Mono",monospace;font-size:11px;color:hsla(var(--ds-amber-900-value),1);width:110px}
+.hop .nm{color:hsla(var(--ds-gray-1000-value),1);font-weight:500}
+.hop .p{margin-left:auto;font-family:"Geist Mono",monospace;font-size:11px;color:hsla(var(--ds-gray-700-value),1)}
+#dice{width:100%;margin-top:10px}
+
+/* ─── graph ─── */
+.link{stroke:var(--link-stroke)}
+.link.hl{stroke:hsla(var(--ds-blue-700-value),1)}
+.node circle{cursor:pointer;transition:opacity .2s;stroke-width:1.5}
+.node text{
+  font-family:"Geist Mono",ui-monospace,monospace;font-size:10px;
+  fill:hsla(var(--ds-gray-800-value),1);
+  paint-order:stroke;stroke:var(--background);stroke-width:3px;pointer-events:none;
+}
+.node.dimmed{opacity:.1}
+.link.dimmed{opacity:.08}
+.node.hit text,.node.focus text{fill:hsla(var(--ds-gray-1000-value),1);font-weight:500}
+.node.focus circle{stroke:hsla(var(--ds-blue-700-value),1);stroke-width:3}
+#toast{
+  position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:40;
+  display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:6px;
+  font-size:12px;font-weight:500;color:hsla(var(--ds-gray-1000-value),1);
+  opacity:0;transition:opacity .25s;pointer-events:none;
+}
+#toast.show{opacity:1}
+@media(max-width:760px){#panel{width:100vw}#walkhud{min-width:0;width:94vw}.brand span{display:none}}
+</style>
+</head>
+<body>
+<svg id="space"></svg>
+
+<header>
+  <div class="brand"><b>graphmem</b><span>graph explorer</span></div>
+  <input id="q" placeholder="Search… (type = filter · Enter = semantic)" autocomplete="off" spellcheck="false">
+  <span class="chip badge-frost" id="cnodes"><b>–</b>&nbsp;nodes</span>
+  <span class="chip badge-frost" id="cedges"><b>–</b>&nbsp;edges</span>
+  <button class="btn btn-secondary" id="walkbtn">Walk mode</button>
+</header>
+
+<div id="legend"><div class="cap">domains</div></div>
+
+<aside id="panel">
+  <button class="close" onclick="closePanel()">✕</button>
+  <div id="pbody"></div>
+</aside>
+
+<div id="walkhud">
+  <div class="wk-title">Markov walk <span class="at" id="wkfrom"></span><span class="esc">esc to exit</span></div>
+  <div id="trail"></div>
+  <div id="hops"></div>
+  <button class="btn btn-primary" id="dice">Random step — P(next) ∝ weight</button>
+</div>
+
+<div id="toast" class="badge-frost"></div>
+
+<script>
+/* domain → SRT color family (-700 light / -900 dark accents handled via vars) */
+const FAM = {env:"blue",engineering:"amber",github:"purple",design:"pink",
+             plan:"green",saas:"teal",ideas:"red",personal:"gray"};
+const fill = d => `hsla(var(--ds-${FAM[d]||"gray"}-700-value),1)`;
+const soft = d => `hsla(var(--ds-${FAM[d]||"gray"}-400-value),1)`;
+
+let G={nodes:[],edges:[]}, sim, svg, gLink, gNode, zoomLayer;
+let walkMode=false, walkCur=null, trail=[];
+const offDomains=new Set();
+
+const $=s=>document.querySelector(s);
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");
+  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2200);}
+window.addEventListener("error",e=>{const t=$("#toast");if(!t)return;
+  t.textContent="⚠ "+e.message;t.classList.add("show");});
+
+async function boot(){
+  G = await (await fetch("/api/graph")).json();
+  $("#cnodes").innerHTML=`<b>${G.nodes.length}</b>&nbsp;nodes`;
+  $("#cedges").innerHTML=`<b>${G.edges.length}</b>&nbsp;edges`;
+  buildLegend(); draw();
+}
+
+function buildLegend(){
+  const doms=[...new Set(G.nodes.map(n=>n.domain))].sort();
+  $("#legend").insertAdjacentHTML("beforeend", doms.map(d=>
+    `<span class="leg" data-d="${d}"><i class="ds-dot" style="background:${fill(d)}"></i>${d}</span>`).join(""));
+  document.querySelectorAll(".leg").forEach(el=>el.onclick=()=>{
+    const d=el.dataset.d;
+    offDomains.has(d)?offDomains.delete(d):offDomains.add(d);
+    el.classList.toggle("off"); applyDomainFilter();
+  });
+}
+
+function applyDomainFilter(){
+  gNode.classed("dimmed",d=>offDomains.has(d.domain));
+  gLink.classed("dimmed",l=>offDomains.has(l.source.domain)||offDomains.has(l.target.domain));
+}
+
+function draw(){
+  svg=d3.select("#space");
+  const W=innerWidth,H=innerHeight;
+  svg.attr("viewBox",[0,0,W,H]);
+  zoomLayer=svg.append("g");
+  svg.call(d3.zoom().scaleExtent([.2,5]).on("zoom",e=>zoomLayer.attr("transform",e.transform)));
+
+  const known=new Set(G.nodes.map(n=>n.name));   // guard: drop edges to missing nodes (would crash forceLink)
+  const links=G.edges.filter(e=>known.has(e.src)&&known.has(e.dst))
+                     .map(e=>({source:e.src,target:e.dst,rel:e.rel,weight:e.weight}));
+  const deg={}; links.forEach(l=>{deg[l.source]=(deg[l.source]||0)+1;deg[l.target]=(deg[l.target]||0)+1;});
+  function rad(d){return 5+Math.min(13,1.6*(deg[d.name]||0));}
+
+  sim=d3.forceSimulation(G.nodes.map(n=>(n.id=n.name,n)))
+    .force("link",d3.forceLink(links).id(d=>d.name).distance(l=>120-60*l.weight).strength(l=>.2+.5*l.weight))
+    .force("charge",d3.forceManyBody().strength(-240))
+    .force("center",d3.forceCenter(W/2,H/2))
+    .force("collide",d3.forceCollide().radius(d=>rad(d)+13));
+
+  gLink=zoomLayer.append("g").selectAll("line").data(links).join("line")
+    .attr("class","link").attr("stroke-width",l=>.5+2.4*l.weight);
+
+  gNode=zoomLayer.append("g").selectAll("g").data(G.nodes).join("g").attr("class","node")
+    .call(d3.drag()
+      .on("start",(e,d)=>{if(!e.active)sim.alphaTarget(.25).restart();d.fx=d.x;d.fy=d.y;})
+      .on("drag",(e,d)=>{d.fx=e.x;d.fy=e.y;})
+      .on("end",(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=d.fy=null;}));
+
+  gNode.append("circle")
+    .attr("r",d=>rad(d))
+    .style("fill",d=>fill(d.domain))
+    .style("stroke",d=>soft(d.domain))
+    .on("click",(e,d)=>{e.stopPropagation();walkMode?walkTo(d.name,null):openPanel(d.name);});
+
+  gNode.append("text").attr("dy",d=>-rad(d)-5).attr("text-anchor","middle").text(d=>d.name);
+
+  sim.on("tick",()=>{
+    gLink.attr("x1",l=>l.source.x).attr("y1",l=>l.source.y)
+         .attr("x2",l=>l.target.x).attr("y2",l=>l.target.y);
+    gNode.attr("transform",d=>`translate(${d.x},${d.y})`);
+  });
+
+  gNode.attr("opacity",0).transition().delay((d,i)=>i*10).duration(400).attr("opacity",1);
+  gLink.attr("opacity",0).transition().delay(350).duration(700).attr("opacity",1);
+}
+
+/* ── search ── */
+$("#q").addEventListener("input",e=>{
+  const t=e.target.value.trim().toLowerCase();
+  if(!t){applyDomainFilter();gNode.classed("hit",false);return;}
+  const hit=d=>d.name.toLowerCase().includes(t)||d.title.toLowerCase().includes(t)||(d.summary||"").toLowerCase().includes(t);
+  gNode.classed("dimmed",d=>!hit(d)).classed("hit",d=>hit(d));
+  gLink.classed("dimmed",true);
+});
+$("#q").addEventListener("keydown",async e=>{
+  if(e.key!=="Enter")return;
+  const q=e.target.value.trim(); if(!q)return;
+  toast("semantic search…");
+  const res=await(await fetch(`/api/recall?q=${encodeURIComponent(q)}&k=8`)).json();
+  const names=new Set(res.hits.map(h=>h.name));
+  gNode.classed("dimmed",d=>!names.has(d.name)).classed("hit",d=>names.has(d.name));
+  gLink.classed("dimmed",true);
+  toast(`${names.size} hits — closest: ${res.hits[0]?.name??"none"}`);
+});
+
+/* ── detail panel ── */
+async function openPanel(name){
+  const n=await(await fetch(`/api/node/${encodeURIComponent(name)}`)).json();
+  if(n.error){toast(n.error);return;}
+  $("#pbody").innerHTML=`
+    <div class="kicker">${n.kind} · ${n.status} · conf ${n.confidence}</div>
+    <h2>${esc(n.title)}</h2>
+    <div class="slug">${n.name}</div>
+    <div class="tags">
+      <span class="chip badge-frost"><i class="ds-dot" style="background:${fill(n.domain)}"></i>${n.domain}</span>
+      ${(n.tags||[]).map(t=>`<span class="chip badge-frost">${esc(t)}</span>`).join("")}
+    </div>
+    <div class="sec">Summary</div><p class="body">${esc(n.summary||"—")}</p>
+    ${n.body?`<div class="sec">Body</div><p class="body">${esc(n.body)}</p>`:""}
+    <div class="sec">Edges (${(n.edges||[]).length})</div>
+    ${(n.edges||[]).map(ed=>{
+      const other=ed.src===n.name?ed.dst:ed.src;
+      const dir=ed.src===n.name?"→":"←";
+      return `<div class="edge-row" onclick="openPanel('${other}')">
+        <span class="rel">${ed.rel}</span><span class="arrow">${dir}</span>
+        <span class="to">${other}</span><span class="w">${ed.weight}</span></div>`;
+    }).join("")||"<p class='body'>—</p>"}
+    <div class="sec">Provenance</div>
+    <div class="meta">
+      <span>source</span><b>${esc(n.source||"—")}</b>
+      <span>verified</span><b>${n.last_verified||"—"}</b>
+      <span>updated</span><b>${n.updated_at||"—"}</b>
+      <span>sensitivity</span><b>${n.sensitivity}</b>
+    </div>`;
+  $("#panel").classList.add("open");
+  focusNode(n.name);
+}
+function closePanel(){$("#panel").classList.remove("open");gNode.classed("focus",false);}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function focusNode(name){gNode.classed("focus",d=>d.name===name);}
+
+/* ── walk mode ── */
+$("#walkbtn").onclick=()=>walkMode?exitWalk():enterWalk();
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){exitWalk();closePanel();}});
+
+function enterWalk(){
+  walkMode=true;
+  const b=$("#walkbtn");b.classList.remove("btn-secondary");b.classList.add("btn-primary");b.textContent="Walking…";
+  toast("walk mode — click a start node");
+}
+function exitWalk(){
+  walkMode=false;walkCur=null;trail=[];
+  const b=$("#walkbtn");b.classList.add("btn-secondary");b.classList.remove("btn-primary");b.textContent="Walk mode";
+  $("#walkhud").classList.remove("on");
+  gNode.classed("focus",false).classed("hit",false);
+  applyDomainFilter();
+  gLink.classed("hl",false).classed("dimmed",l=>offDomains.has(l.source.domain)||offDomains.has(l.target.domain));
+}
+function neighborsOf(name){
+  const out=[];
+  G.edges.forEach(e=>{
+    if(e.src===name)out.push({to:e.dst,rel:e.rel,weight:e.weight,dir:"→"});
+    else if(e.dst===name)out.push({to:e.src,rel:e.rel,weight:e.weight,dir:"←"});
+  });
+  return out.sort((a,b)=>b.weight-a.weight);
+}
+function walkTo(name,via){
+  walkCur=name;
+  if(via!==null||trail.length===0)trail.push(name);
+  const nb=neighborsOf(name);
+  const total=nb.reduce((s,x)=>s+x.weight,0)||1;
+  const inSet=new Set([name,...nb.map(x=>x.to)]);
+  gNode.classed("dimmed",d=>!inSet.has(d.name)).classed("focus",d=>d.name===name).classed("hit",false);
+  gLink.classed("hl",l=>(l.source.name===name&&inSet.has(l.target.name))||(l.target.name===name&&inSet.has(l.source.name)))
+       .classed("dimmed",l=>l.source.name!==name&&l.target.name!==name);
+  $("#wkfrom").textContent="@ "+name;
+  $("#trail").innerHTML=trail.map((t,i)=>
+    `<span class="crumb" onclick="jumpTrail(${i})">${t}</span>`).join(`<span class="sep"> › </span>`);
+  $("#hops").innerHTML=nb.map(x=>{
+    const p=(x.weight/total*100).toFixed(0);
+    return `<div class="hop" onclick="walkTo('${x.to}','step')">
+      <span class="bar" style="width:${8+x.weight*64}px"></span>
+      <span class="rel">${x.dir} ${x.rel}</span>
+      <span class="nm">${x.to}</span><span class="p">w ${x.weight} · P≈${p}%</span></div>`;
+  }).join("")||"<div class='hop'>dead end — no neighbors</div>";
+  $("#walkhud").classList.add("on");
+}
+function jumpTrail(i){trail=trail.slice(0,i+1);walkTo(trail[i],"jump");}
+$("#dice").onclick=()=>{
+  if(!walkCur)return;
+  const nb=neighborsOf(walkCur);if(!nb.length)return toast("no neighbors");
+  const total=nb.reduce((s,x)=>s+x.weight,0);
+  let r=Math.random()*total;
+  for(const x of nb){r-=x.weight;if(r<=0){toast(`${x.rel} → ${x.to}`);return walkTo(x.to,"dice");}}
+  walkTo(nb[nb.length-1].to,"dice");
+};
+
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "graphmem",
+  "version": "0.2.2",
+  "description": "Knowledge-graph memory for Claude — persistent, cross-device, semantic + graph recall (Oracle ADB backend)",
+  "author": { "name": "Muhammed Sezer" },
+  "mcpServers": {
+    "graphmem": {
+      "command": "uv",
+      "args": ["run", "--with", "${CLAUDE_PLUGIN_ROOT}", "python", "-m", "graphmem.server"]
+    }
+  }
+}

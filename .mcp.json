@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "graphmem": {
+      "command": "uv",
+      "args": ["run", "--with", ".", "python", "-m", "graphmem.server"]
+    }
+  }
+}
