@@ -15,7 +15,7 @@ import argparse
 import json
 import sys
 
-from . import core
+from . import __version__, core
 
 # Windows console defaults to cp1252 and crashes on non-ASCII output
 for _stream in (sys.stdout, sys.stderr):
@@ -30,6 +30,8 @@ def p(obj):
 def main():
     ap = argparse.ArgumentParser(prog="graphmem",
                                  description="knowledge-graph memory CLI")
+    ap.add_argument("--version", action="version",
+                    version=f"graphmem {__version__}")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("recall", help="semantic search")

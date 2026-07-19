@@ -24,6 +24,12 @@ except FileNotFoundError:
 WEB_USER = os.environ.get("GRAPHMEM_WEB_USER") or _env.get("GRAPHMEM_WEB_USER")
 WEB_PASS = os.environ.get("GRAPHMEM_WEB_PASSWORD") or _env.get("GRAPHMEM_WEB_PASSWORD")
 
+# Fail closed: a half-configured credential (only user OR only password) must
+# never silently disable auth on a potentially public explorer.
+if bool(WEB_USER) != bool(WEB_PASS):
+    raise RuntimeError("graphmem web: set BOTH GRAPHMEM_WEB_USER and "
+                       "GRAPHMEM_WEB_PASSWORD to require auth, or neither to run open")
+
 _basic = HTTPBasic()
 
 
@@ -45,6 +51,16 @@ def index():
     return FileResponse(os.path.join(STATIC, "index.html"))
 
 
+@app.get("/tables")
+def tables():
+    return FileResponse(os.path.join(STATIC, "tables.html"))
+
+
+@app.get("/diagram")
+def diagram():
+    return FileResponse(os.path.join(STATIC, "diagram.html"))
+
+
 @app.get("/api/graph")
 def api_graph():
     return JSONResponse(core.graph_dump())
@@ -52,7 +68,10 @@ def api_graph():
 
 @app.get("/api/node/{name}")
 def api_node(name: str):
-    return JSONResponse(core.get(name))
+    # Public exposure guard: never serve raw secret values. redact_secret masks
+    # BOTH body and attrs of a sensitivity=secret node; title/summary/edges stay
+    # visible. Applied on every node-detail surface for consistency.
+    return JSONResponse(core.redact_secret(core.get(name)))
 
 
 @app.get("/api/recall")

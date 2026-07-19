@@ -149,5 +149,9 @@ Optional HTTP Basic auth: set `GRAPHMEM_WEB_USER` + `GRAPHMEM_WEB_PASSWORD` in
 
 ## License
 
-MIT — see [LICENSE](LICENSE). A SQLite adapter for zero-setup local use is on the
+MIT — see [LICENSE](LICENSE). **v1.0.0** (2026-07-19) is the first stable release;
+see [CHANGELOG.md](CHANGELOG.md). A SQLite adapter for zero-setup local use is on the
 roadmap (DESIGN.md §8); today the backend is a free Oracle Autonomous Database.
+
+A visual **console** with an AI copilot (Claude Haiku, grounded in your graph) lives
+at graphmem.sezer.ai — the graph you can see and steer, not just a library.

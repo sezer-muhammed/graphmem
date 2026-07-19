@@ -17,6 +17,10 @@ BRIEF_COLS = "name, domain, kind, title, summary, status"
 _conn = None
 
 
+class DBUnavailable(RuntimeError):
+    """Raised when the Oracle ADB can't be reached (e.g. Always-Free idle-stop)."""
+
+
 def db():
     global _conn
     if _conn is not None:
@@ -25,7 +29,13 @@ def db():
             return _conn
         except Exception:
             _conn = None
-    _conn = connect()
+    try:
+        _conn = connect()
+    except Exception as exc:
+        raise DBUnavailable(
+            "cannot reach the memory database. If this is the Always-Free ADB it "
+            "may be waking from idle — retry shortly, or run "
+            "`python -m graphmem.keepalive`. Original error: " + str(exc)) from exc
     return _conn
 
 
@@ -73,6 +83,18 @@ def node_row(r, cols):
         if k in d:
             d[k] = jval(d[k])
     return {k.lower(): plain(v) for k, v in d.items()}
+
+
+def redact_secret(node):
+    """Mask the body + attrs of a secret-sensitivity node for any public/UI
+    surface. Title, summary, kind, and edges stay visible — only the sensitive
+    values are hidden. Idempotent; returns the same dict for chaining."""
+    if isinstance(node, dict) and node.get("sensitivity") == "secret":
+        if node.get("body"):
+            node["body"] = "[redacted — secret node]"
+        if node.get("attrs"):
+            node["attrs"] = {"_redacted": True}
+    return node
 
 
 def vocab_values(cur, category):
@@ -129,16 +151,20 @@ def remember(name, domain, kind, title, summary, body="", tags=None, attrs=None,
                              "or retry with force=true",
                 "duplicates": dupes}
 
-    cur.execute(f"""
-        INSERT INTO node (name, domain, kind, title, summary, body, attrs, tags,
-                          aliases, sensitivity, source, confidence, last_verified, embedding)
-        VALUES (:name, :domain, :kind, :title, :summary, :body, :attrs, :tags,
-                :aliases, :sens, :source, :conf, SYSTIMESTAMP, {embed_expr('etext')})""",
-        name=name, domain=domain, kind=kind, title=title, summary=summary,
-        body=body or None, attrs=json.dumps(attrs) if attrs else None,
-        tags=json.dumps(tags) if tags else None,
-        aliases=json.dumps(aliases) if aliases else None,
-        sens=sensitivity, source=source, conf=confidence, etext=etext)
+    try:
+        cur.execute(f"""
+            INSERT INTO node (name, domain, kind, title, summary, body, attrs, tags,
+                              aliases, sensitivity, source, confidence, last_verified, embedding)
+            VALUES (:name, :domain, :kind, :title, :summary, :body, :attrs, :tags,
+                    :aliases, :sens, :source, :conf, SYSTIMESTAMP, {embed_expr('etext')})""",
+            name=name, domain=domain, kind=kind, title=title, summary=summary,
+            body=body or None, attrs=json.dumps(attrs) if attrs else None,
+            tags=json.dumps(tags) if tags else None,
+            aliases=json.dumps(aliases) if aliases else None,
+            sens=sensitivity, source=source, conf=confidence, etext=etext)
+    except oracledb.IntegrityError:
+        return {"error": f"a node named '{name}' already exists — use update to "
+                         "modify it, or choose a different name"}
     conn.commit()
     suggestions = [x for x in near if DEDUP_DISTANCE <= x["distance"] < 0.75]
     return {"saved": name, "link_suggestions": suggestions,
@@ -412,6 +438,8 @@ def export_graph(include_secret=False):
         n = node_row(r, cols)
         if n["sensitivity"] == "secret" and not include_secret:
             n["body"] = "[REDACTED — export with include_secret to keep]"
+            if n.get("attrs"):
+                n["attrs"] = {"_redacted": True}
         nodes.append(n)
     cur.execute("""SELECT n1.name, n2.name, e.rel, e.weight, e.note,
                           TO_CHAR(e.created_at,'YYYY-MM-DD"T"HH24:MI:SS')

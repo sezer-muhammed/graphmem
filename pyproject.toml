@@ -1,6 +1,6 @@
 [project]
 name = "graphmem"
-version = "0.2.2"
+version = "1.0.0"
 description = "Knowledge-graph memory for Claude — MCP server + CLI, Oracle ADB backend with in-DB ONNX embeddings"
 readme = "README.md"
 license = "MIT"

@@ -27,17 +27,29 @@ def find_env() -> str:
 
 def load_env(path: str | None = None) -> dict:
     env = {}
-    with open(path or find_env()) as f:
+    with open(path or find_env(), encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 k, v = line.split("=", 1)
+                k, v = k.strip(), v.strip()
+                # strip a single matching pair of surrounding quotes (dotenv-style)
+                if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+                    v = v[1:-1]
                 env[k] = v
     return env
 
 
+REQUIRED_KEYS = ("ADB_USER", "ADB_PASSWORD", "ADB_DSN",
+                 "ADB_WALLET_DIR", "ADB_WALLET_PASSWORD")
+
+
 def connect(env: dict | None = None) -> oracledb.Connection:
     env = env or load_env()
+    missing = [k for k in REQUIRED_KEYS if not env.get(k)]
+    if missing:
+        raise KeyError("graphmem .env is missing required key(s): "
+                       + ", ".join(missing) + " — see .env.example")
     return oracledb.connect(
         user=env["ADB_USER"],
         password=env["ADB_PASSWORD"],

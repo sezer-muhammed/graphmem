@@ -110,6 +110,10 @@ header>*{pointer-events:auto}
 .brand{display:flex;flex-direction:column;gap:1px;white-space:nowrap}
 .brand b{font-size:15px;font-weight:600;line-height:20px;color:hsla(var(--ds-gray-1000-value),1)}
 .brand span{font-family:"Geist Mono",monospace;font-size:11px;text-transform:uppercase;color:hsla(var(--ds-gray-700-value),1)}
+.nav{display:flex;gap:2px;margin-left:2px}
+.nav a{padding:6px 11px;border-radius:7px;font-size:13px;font-weight:500;color:hsla(var(--ds-gray-900-value),1);text-decoration:none;transition:background .12s}
+.nav a:hover{background:hsla(var(--ds-gray-100-value),1)}
+.nav a.on{background:hsla(var(--ds-gray-1000-value),1);color:var(--ds-background-100)}
 #q{
   flex:1;max-width:480px;height:36px;padding:0 12px;font:inherit;font-size:13px;
   color:hsla(var(--ds-gray-1000-value),1);
@@ -264,6 +268,11 @@ button.btn:focus-visible{box-shadow:var(--ds-focus-ring)}
 
 <header>
   <div class="brand"><b>graphmem</b><span>graph explorer</span></div>
+  <nav class="nav">
+    <a href="/" class="on">Graph</a>
+    <a href="/tables">Tables</a>
+    <a href="/diagram">Diagram</a>
+  </nav>
   <input id="q" placeholder="Search… (type = filter · Enter = semantic)" autocomplete="off" spellcheck="false">
   <span class="chip badge-frost" id="cnodes"><b>–</b>&nbsp;nodes</span>
   <span class="chip badge-frost" id="cedges"><b>–</b>&nbsp;edges</span>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>graphmem — Tables</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --background:#fafafa;--foreground:#171717;
+  --page-grid-line:rgb(0 0 0 / 0.035);--page-grid-softener:rgb(250 250 250 / 0.72);
+  --ds-background-100:#fff;--ds-background-200:#fafafa;
+  --gray-100:hsl(0,0%,95%);--gray-200:hsl(0,0%,92%);--gray-300:hsl(0,0%,90%);
+  --gray-600:hsl(0,0%,66%);--gray-700:hsl(0,0%,56%);--gray-900:hsl(0,0%,30%);--gray-1000:hsl(0,0%,9%);
+  --alpha-300:#0000001a;--alpha-400:#00000014;--alpha-500:#00000036;
+  --blue-700:hsl(212,100%,48%);--blue-900:hsl(211,100%,42%);
+  --amber-900:hsl(30,100%,32%);--green-700:hsl(131,41%,46%);--red-700:hsl(358,75%,59%);
+  --env:hsl(212,100%,48%);--engineering:hsl(39,100%,57%);--github:hsl(272,51%,54%);
+  --design:hsl(336,80%,58%);--plan:hsl(131,41%,46%);--saas:hsl(173,80%,36%);
+  --ideas:hsl(358,75%,59%);--personal:hsl(0,0%,49%);
+}
+@media (prefers-color-scheme:dark){:root{
+  --background:#000;--foreground:#ededed;
+  --page-grid-line:rgb(255 255 255 / 0.055);--page-grid-softener:rgb(0 0 0 / 0.58);
+  --ds-background-100:hsl(0,0%,4%);--ds-background-200:#000;
+  --gray-100:hsl(0,0%,10%);--gray-200:hsl(0,0%,12%);--gray-300:hsl(0,0%,16%);
+  --gray-600:hsl(0,0%,53%);--gray-700:hsl(0,0%,62%);--gray-900:hsl(0,0%,63%);--gray-1000:hsl(0,0%,93%);
+  --alpha-300:#ffffff21;--alpha-400:#ffffff24;--alpha-500:#ffffff3d;
+  --blue-900:hsl(210,100%,66%);--amber-900:hsl(39,90%,50%);--green-700:hsl(131,43%,57%);
+  --env:hsl(210,100%,66%);--engineering:hsl(39,90%,55%);--github:hsl(275,80%,71%);
+  --design:hsl(341,90%,67%);--plan:hsl(131,43%,57%);--saas:hsl(174,90%,41%);
+  --ideas:hsl(358,80%,66%);--personal:hsl(0,0%,63%);
+}}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--ds-background-200);color:var(--foreground)}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 50% 0%,var(--page-grid-softener) 0,transparent 720px),
+    linear-gradient(var(--page-grid-line) 1px,transparent 1px),
+    linear-gradient(90deg,var(--page-grid-line) 1px,transparent 1px),var(--background);
+  background-size:auto,72px 72px,72px 72px,auto;
+  font-family:"Geist",Arial,sans-serif;-webkit-font-smoothing:antialiased;
+  font-size:13px;line-height:20px;color:var(--foreground);
+}
+.mono{font-family:"Geist Mono",ui-monospace,monospace}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;
+  padding:12px 20px;background:color-mix(in srgb,var(--ds-background-200) 82%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--alpha-400)}
+.brand{display:flex;flex-direction:column;gap:1px;white-space:nowrap}
+.brand b{font-size:15px;font-weight:600;color:var(--gray-1000)}
+.brand span{font-family:"Geist Mono",monospace;font-size:11px;text-transform:uppercase;color:var(--gray-700)}
+nav{display:flex;gap:2px;margin-left:6px}
+nav a{padding:6px 11px;border-radius:7px;font-size:13px;font-weight:500;color:var(--gray-900);
+  text-decoration:none;transition:background .12s}
+nav a:hover{background:var(--gray-100)}
+nav a.on{background:var(--gray-1000);color:var(--ds-background-100)}
+#q{flex:1;max-width:360px;height:34px;padding:0 12px;font:inherit;font-size:13px;color:var(--gray-1000);
+  background:var(--ds-background-100);border:1px solid var(--alpha-400);border-radius:7px;outline:none;margin-left:auto}
+#q:focus{box-shadow:0 0 0 2px var(--ds-background-100),0 0 0 4px var(--blue-700)}
+.wrap{padding:20px;max-width:1400px;margin:0 auto}
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.stat{padding:12px 16px;border-radius:9px;border:1px solid var(--alpha-400);background:var(--ds-background-100);min-width:96px}
+.stat .n{font-size:22px;font-weight:600;color:var(--gray-1000);font-family:"Geist Mono",monospace}
+.stat .l{font-size:11px;text-transform:uppercase;color:var(--gray-700);font-family:"Geist Mono",monospace;margin-top:2px}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:7px;
+  border:1px solid var(--alpha-400);background:var(--ds-background-100);font-size:12px;font-weight:500;
+  color:var(--gray-1000);cursor:pointer;user-select:none;transition:opacity .12s}
+.fchip.off{opacity:.32}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.tablecard{border:1px solid var(--alpha-400);border-radius:11px;overflow:hidden;background:var(--ds-background-100)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{position:sticky;top:59px;background:var(--ds-background-100);text-align:left;
+  font-family:"Geist Mono",monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;
+  color:var(--gray-700);font-weight:500;padding:11px 14px;border-bottom:1px solid var(--alpha-400);
+  cursor:pointer;white-space:nowrap;user-select:none}
+thead th:hover{color:var(--gray-1000)}
+thead th .ar{opacity:.5;font-size:9px}
+tbody td{padding:10px 14px;border-bottom:1px solid var(--alpha-300);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--gray-100)}
+td.name{font-family:"Geist Mono",monospace;font-size:12px;color:var(--blue-900);font-weight:500;white-space:nowrap}
+td.dom{white-space:nowrap}
+td.dom span{display:inline-flex;align-items:center;gap:7px;font-weight:500;color:var(--gray-1000)}
+td.kind{font-family:"Geist Mono",monospace;font-size:11px;color:var(--gray-900);white-space:nowrap}
+td.title{color:var(--gray-1000);max-width:420px}
+td.title .sm{color:var(--gray-700);font-size:11.5px;display:block;margin-top:2px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;max-width:420px}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:500;font-family:"Geist Mono",monospace}
+.pill.active{color:var(--green-700);background:color-mix(in srgb,var(--green-700) 14%,transparent)}
+.pill.archived{color:var(--gray-700);background:var(--gray-200)}
+.pill.secret{color:var(--red-700);background:color-mix(in srgb,var(--red-700) 13%,transparent)}
+td.num{font-family:"Geist Mono",monospace;color:var(--gray-900);text-align:right}
+.conf{display:inline-block;width:34px;height:5px;border-radius:3px;background:var(--gray-200);position:relative;vertical-align:middle;margin-right:7px}
+.conf i{position:absolute;inset:0;border-radius:3px;background:var(--blue-700)}
+@media(max-width:760px){td.title{max-width:180px}td.title .sm{max-width:180px}nav a{padding:6px 8px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>graphmem</b><span>tables</span></div>
+  <nav>
+    <a href="/">Graph</a>
+    <a href="/tables" class="on">Tables</a>
+    <a href="/diagram">Diagram</a>
+  </nav>
+  <input id="q" placeholder="Filter rows…" autocomplete="off" spellcheck="false">
+</header>
+
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <div class="filters" id="filters"></div>
+  <div class="tablecard">
+    <table>
+      <thead><tr id="head"></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const DOM=["env","engineering","github","design","plan","saas","ideas","personal"];
+const col=d=>`var(--${DOM.includes(d)?d:"personal"})`;
+const off=new Set(), $=s=>document.querySelector(s);
+let ALL=[], sortKey="domain", sortDir=1, filter="";
+
+const COLS=[
+  {k:"domain",  t:"Domain"},
+  {k:"name",    t:"Name"},
+  {k:"kind",    t:"Kind"},
+  {k:"title",   t:"Title"},
+  {k:"status",  t:"Status"},
+  {k:"confidence",t:"Conf",num:1},
+  {k:"deg",     t:"Edges",num:1},
+  {k:"updated", t:"Updated",num:1},
+];
+
+async function boot(){
+  const g=await(await fetch("/api/graph")).json();
+  const deg={}; g.edges.forEach(e=>{deg[e.src]=(deg[e.src]||0)+1;deg[e.dst]=(deg[e.dst]||0)+1;});
+  ALL=g.nodes.map(n=>({...n,deg:deg[n.name]||0}));
+
+  // stats
+  const byDom={}; ALL.forEach(n=>byDom[n.domain]=(byDom[n.domain]||0)+1);
+  const creds=ALL.filter(n=>n.kind==="credential").length;
+  $("#stats").innerHTML=[
+    ["nodes",ALL.length],["edges",g.edges.length],
+    ["domains",Object.keys(byDom).length],["credentials",creds],
+  ].map(([l,n])=>`<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+
+  // domain filter chips
+  $("#filters").innerHTML=DOM.filter(d=>byDom[d]).map(d=>
+    `<span class="fchip" data-d="${d}"><i class="dot" style="background:${col(d)}"></i>${d} <span class="mono" style="opacity:.6">${byDom[d]}</span></span>`).join("");
+  document.querySelectorAll(".fchip").forEach(el=>el.onclick=()=>{
+    const d=el.dataset.d; off.has(d)?off.delete(d):off.add(d); el.classList.toggle("off"); render();
+  });
+
+  // head
+  $("#head").innerHTML=COLS.map(c=>`<th data-k="${c.k}" ${c.num?'style="text-align:right"':''}>${c.t} <span class="ar" data-ar="${c.k}"></span></th>`).join("");
+  document.querySelectorAll("th").forEach(th=>th.onclick=()=>{
+    const k=th.dataset.k; if(sortKey===k)sortDir*=-1; else{sortKey=k;sortDir=1;} render();
+  });
+  render();
+}
+$("#q").oninput=e=>{filter=e.target.value.trim().toLowerCase();render();};
+
+function render(){
+  let rows=ALL.filter(n=>!off.has(n.domain));
+  if(filter)rows=rows.filter(n=>(n.name+" "+n.title+" "+(n.summary||"")+" "+n.kind).toLowerCase().includes(filter));
+  rows.sort((a,b)=>{
+    let x=a[sortKey],y=b[sortKey];
+    if(typeof x==="number"||typeof y==="number"){x=+x||0;y=+y||0;return (x-y)*sortDir;}
+    return String(x).localeCompare(String(y))*sortDir;
+  });
+  document.querySelectorAll("[data-ar]").forEach(s=>s.textContent=s.dataset.ar===sortKey?(sortDir>0?"▲":"▼"):"");
+  $("#rows").innerHTML=rows.map(n=>{
+    const conf=Math.round((n.confidence||0)*100);
+    const st=n.kind==="credential"?`<span class="pill secret">secret</span>`
+            :`<span class="pill ${n.status}">${n.status}</span>`;
+    return `<tr>
+      <td class="dom"><span><i class="dot" style="background:${col(n.domain)}"></i>${n.domain}</span></td>
+      <td class="name">${esc(n.name)}</td>
+      <td class="kind">${esc(n.kind)}</td>
+      <td class="title">${esc(n.title)}<span class="sm">${esc(n.summary||"")}</span></td>
+      <td>${st}</td>
+      <td class="num"><span class="conf"><i style="width:${conf}%"></i></span>${conf}</td>
+      <td class="num">${n.deg}</td>
+      <td class="num" style="color:var(--gray-700)">${n.updated||"—"}</td>
+    </tr>`;
+  }).join("")||`<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--gray-700)">no rows</td></tr>`;
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+boot();
+</script>
+</body>
+</html>
