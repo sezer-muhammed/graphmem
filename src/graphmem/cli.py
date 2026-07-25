@@ -16,6 +16,7 @@ import json
 import sys
 
 from . import __version__, core
+from .context import local_single_user_context
 
 # Windows console defaults to cp1252 and crashes on non-ASCII output
 for _stream in (sys.stdout, sys.stderr):
@@ -28,6 +29,7 @@ def p(obj):
 
 
 def main():
+    ctx = local_single_user_context()
     ap = argparse.ArgumentParser(prog="graphmem",
                                  description="knowledge-graph memory CLI")
     ap.add_argument("--version", action="version",
@@ -112,37 +114,37 @@ def main():
     a = ap.parse_args()
 
     if a.cmd == "recall":
-        p(core.recall(a.query, a.k, a.domain, not a.no_neighbors))
+        p(core.recall(ctx, a.query, a.k, a.domain, not a.no_neighbors))
     elif a.cmd == "search":
-        p(core.search(a.text, a.domain, a.kind, a.status, a.limit))
+        p(core.search(ctx, a.text, a.domain, a.kind, a.status, a.limit))
     elif a.cmd == "get":
-        p(core.get(a.name))
+        p(core.get(ctx, a.name))
     elif a.cmd == "remember":
         tags = [t.strip() for t in a.tags.split(",") if t.strip()] or None
         attrs = json.loads(a.attrs) if a.attrs else None
-        p(core.remember(a.name, a.domain, a.kind, a.title, a.summary, a.body,
+        p(core.remember(ctx, a.name, a.domain, a.kind, a.title, a.summary, a.body,
                         tags, attrs, None, a.sensitivity, a.source,
                         a.confidence, a.force))
     elif a.cmd == "link":
-        p(core.link(a.src, a.dst, a.rel, a.weight, a.note))
+        p(core.link(ctx, a.src, a.dst, a.rel, a.weight, a.note))
     elif a.cmd == "walk":
-        p(core.walk(a.start, a.depth, a.min_weight, a.rel))
+        p(core.walk(ctx, a.start, a.depth, a.min_weight, a.rel))
     elif a.cmd == "update":
         tags = [t.strip() for t in a.add_tags.split(",") if t.strip()] or None
         attrs = json.loads(a.attrs) if a.attrs else None
-        p(core.update(a.name, a.title, a.summary, a.body, a.status, -1.0,
+        p(core.update(ctx, a.name, a.title, a.summary, a.body, a.status, -1.0,
                       tags, attrs, a.verified))
     elif a.cmd == "forget":
-        p(core.forget(a.name, a.hard))
+        p(core.forget(ctx, a.name, a.hard))
     elif a.cmd == "vocab":
-        p(core.vocab(a.action, a.category, a.value, a.description, a.inverse))
+        p(core.vocab(ctx, a.action, a.category, a.value, a.description, a.inverse))
     elif a.cmd == "stats":
-        p(core.stats())
+        p(core.stats(ctx))
     elif a.cmd == "init-db":
         from .initdb import init_db
         init_db()
     elif a.cmd == "export":
-        data = core.export_graph(a.include_secret)
+        data = core.export_graph(ctx, a.include_secret)
         if a.out:
             with open(a.out, "w") as f:
                 json.dump(data, f, indent=1, ensure_ascii=False)
@@ -151,7 +153,7 @@ def main():
             p(data)
     elif a.cmd == "import":
         with open(a.file) as f:
-            p(core.import_graph(json.load(f)))
+            p(core.import_graph(ctx, json.load(f)))
     else:
         ap.print_help()
         sys.exit(1)

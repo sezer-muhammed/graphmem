@@ -2,18 +2,57 @@
 -- Everything is a node; edges are typed, directed, weighted (Markov walk).
 -- vocabulary keeps open-ended domain/kind/rel values consistent.
 
+CREATE TABLE app_user (
+    id          VARCHAR2(64)  PRIMARY KEY,
+    issuer      VARCHAR2(255) NOT NULL,
+    subject     VARCHAR2(255) NOT NULL,
+    email       VARCHAR2(320),
+    created_at  TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+    CONSTRAINT app_user_identity_uq UNIQUE (issuer, subject)
+);
+
+CREATE TABLE tenant (
+    id          VARCHAR2(64)  PRIMARY KEY,
+    name        VARCHAR2(200) NOT NULL,
+    created_at  TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL
+);
+
+CREATE TABLE tenant_membership (
+    tenant_id   VARCHAR2(64) NOT NULL REFERENCES tenant(id),
+    user_id     VARCHAR2(64) NOT NULL REFERENCES app_user(id),
+    role        VARCHAR2(16) NOT NULL CHECK (role IN ('owner','member','viewer')),
+    CONSTRAINT tenant_membership_pk PRIMARY KEY (tenant_id, user_id)
+);
+
+CREATE TABLE graph (
+    tenant_id   VARCHAR2(64) NOT NULL REFERENCES tenant(id),
+    id          VARCHAR2(64) NOT NULL,
+    name        VARCHAR2(200) NOT NULL,
+    created_at  TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+    CONSTRAINT graph_pk PRIMARY KEY (tenant_id, id)
+);
+
+INSERT INTO tenant(id,name) VALUES ('legacy-local','Legacy local tenant');
+INSERT INTO graph(tenant_id,id,name) VALUES ('legacy-local','default','Default graph');
+
 CREATE TABLE vocabulary (
+    tenant_id    VARCHAR2(64) DEFAULT 'legacy-local' NOT NULL,
+    graph_id     VARCHAR2(64) DEFAULT 'default' NOT NULL,
     category     VARCHAR2(10)  NOT NULL CHECK (category IN ('domain','kind','rel')),
     value        VARCHAR2(64)  NOT NULL,
     description  VARCHAR2(400),
     inverse_rel  VARCHAR2(64),           -- rels only: part_of -> has_part; NULL = symmetric or n/a
     created_at   TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
-    CONSTRAINT vocabulary_pk PRIMARY KEY (category, value)
+    CONSTRAINT vocabulary_pk PRIMARY KEY (tenant_id, graph_id, category, value),
+    CONSTRAINT vocabulary_graph_fk FOREIGN KEY (tenant_id, graph_id)
+      REFERENCES graph(tenant_id, id)
 );
 
 CREATE TABLE node (
     id            RAW(16)       DEFAULT SYS_GUID() PRIMARY KEY,
-    name          VARCHAR2(128) NOT NULL UNIQUE,      -- stable slug
+    tenant_id     VARCHAR2(64)   DEFAULT 'legacy-local' NOT NULL,
+    graph_id      VARCHAR2(64)   DEFAULT 'default' NOT NULL,
+    name          VARCHAR2(128) NOT NULL,             -- graph-scoped stable slug
     domain        VARCHAR2(64)  NOT NULL,
     kind          VARCHAR2(64)  NOT NULL,
     title         VARCHAR2(400) NOT NULL,
@@ -31,28 +70,40 @@ CREATE TABLE node (
     last_verified TIMESTAMP,
     created_at    TIMESTAMP     DEFAULT SYSTIMESTAMP NOT NULL,
     updated_at    TIMESTAMP     DEFAULT SYSTIMESTAMP NOT NULL,
-    embedding     VECTOR(384, FLOAT32)                -- all-MiniLM-L12-v2 dims
+    embedding     VECTOR(384, FLOAT32),               -- all-MiniLM-L12-v2 dims
+    CONSTRAINT node_graph_fk FOREIGN KEY (tenant_id, graph_id)
+      REFERENCES graph(tenant_id, id),
+    CONSTRAINT node_scope_name_uq UNIQUE (tenant_id, graph_id, name),
+    CONSTRAINT node_scope_id_uq UNIQUE (tenant_id, graph_id, id)
 );
 
-CREATE INDEX node_domain_ix ON node (domain);
-CREATE INDEX node_kind_ix   ON node (kind);
-CREATE INDEX node_status_ix ON node (status);
+CREATE INDEX node_domain_ix ON node (tenant_id, graph_id, domain);
+CREATE INDEX node_kind_ix   ON node (tenant_id, graph_id, kind);
+CREATE INDEX node_status_ix ON node (tenant_id, graph_id, status);
 
 CREATE TABLE edge (
     id              RAW(16)      DEFAULT SYS_GUID() PRIMARY KEY,
-    src             RAW(16)      NOT NULL REFERENCES node(id) ON DELETE CASCADE,
-    dst             RAW(16)      NOT NULL REFERENCES node(id) ON DELETE CASCADE,
+    tenant_id       VARCHAR2(64) DEFAULT 'legacy-local' NOT NULL,
+    graph_id        VARCHAR2(64) DEFAULT 'default' NOT NULL,
+    src             RAW(16)      NOT NULL,
+    dst             RAW(16)      NOT NULL,
     rel             VARCHAR2(64) NOT NULL,
     weight          NUMBER(3,2)  DEFAULT 0.5 NOT NULL CHECK (weight BETWEEN 0 AND 1),
     note            VARCHAR2(1000),
     created_at      TIMESTAMP    DEFAULT SYSTIMESTAMP NOT NULL,
     last_reinforced TIMESTAMP,
-    CONSTRAINT edge_uniq UNIQUE (src, dst, rel),
-    CONSTRAINT edge_no_self CHECK (src != dst)
+    CONSTRAINT edge_uniq UNIQUE (tenant_id, graph_id, src, dst, rel),
+    CONSTRAINT edge_no_self CHECK (src != dst),
+    CONSTRAINT edge_graph_fk FOREIGN KEY (tenant_id, graph_id)
+      REFERENCES graph(tenant_id, id),
+    CONSTRAINT edge_src_scope_fk FOREIGN KEY (tenant_id, graph_id, src)
+      REFERENCES node(tenant_id, graph_id, id) ON DELETE CASCADE,
+    CONSTRAINT edge_dst_scope_fk FOREIGN KEY (tenant_id, graph_id, dst)
+      REFERENCES node(tenant_id, graph_id, id) ON DELETE CASCADE
 );
 
-CREATE INDEX edge_src_ix ON edge (src);
-CREATE INDEX edge_dst_ix ON edge (dst);
+CREATE INDEX edge_src_ix ON edge (tenant_id, graph_id, src);
+CREATE INDEX edge_dst_ix ON edge (tenant_id, graph_id, dst);
 
 -- Oracle Text keyword index over title+summary+body comes after data model
 -- settles (CTX_DDL multi-column datastore); v1 keyword search uses

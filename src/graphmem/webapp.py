@@ -13,9 +13,11 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from . import core
+from .context import local_single_user_context
 from .db import load_env
 
 STATIC = os.path.join(os.path.dirname(__file__), "static")
+_CTX = local_single_user_context()
 
 try:
     _env = load_env()
@@ -63,7 +65,7 @@ def diagram():
 
 @app.get("/api/graph")
 def api_graph():
-    return JSONResponse(core.graph_dump())
+    return JSONResponse(core.graph_dump(_CTX))
 
 
 @app.get("/api/node/{name}")
@@ -71,22 +73,22 @@ def api_node(name: str):
     # Public exposure guard: never serve raw secret values. redact_secret masks
     # BOTH body and attrs of a sensitivity=secret node; title/summary/edges stay
     # visible. Applied on every node-detail surface for consistency.
-    return JSONResponse(core.redact_secret(core.get(name)))
+    return JSONResponse(core.redact_secret(core.get(_CTX, name)))
 
 
 @app.get("/api/recall")
 def api_recall(q: str, k: int = 8):
-    return JSONResponse(core.recall(q, k, include_neighbors=False))
+    return JSONResponse(core.recall(_CTX, q, k, include_neighbors=False))
 
 
 @app.get("/api/walk/{name}")
 def api_walk(name: str, depth: int = 2, min_weight: float = 0.0):
-    return JSONResponse(core.walk(name, depth, min_weight))
+    return JSONResponse(core.walk(_CTX, name, depth, min_weight))
 
 
 @app.get("/api/stats")
 def api_stats():
-    return JSONResponse(core.stats())
+    return JSONResponse(core.stats(_CTX))
 
 
 if __name__ == "__main__":

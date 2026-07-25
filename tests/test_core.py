@@ -12,6 +12,9 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from graphmem import core  # noqa: E402
+from graphmem.context import GraphContext, local_single_user_context  # noqa: E402
+
+CTX = GraphContext("tenant-a", "graph-a", "user-a")
 
 
 # ------------------------------------------------------------- pure helpers --
@@ -83,8 +86,12 @@ class FakeCursor:
     def __init__(self, values):
         self._values = values
         self._rows = []
+        self.sql = ""
+        self.binds = {}
 
     def execute(self, sql, **binds):
+        self.sql = sql
+        self.binds = binds
         self._rows = [(v,) for v in self._values]
 
     def fetchall(self):
@@ -93,17 +100,51 @@ class FakeCursor:
 
 def test_check_vocab_exact_case_insensitive_and_miss():
     cur = FakeCursor({"env", "engineering", "github"})
-    assert core.check_vocab(cur, "domain", "env") == (True, "env")
+    assert core.check_vocab(CTX, cur, "domain", "env") == (True, "env")
     # case-insensitive canonicalization back to the stored value
-    assert core.check_vocab(cur, "domain", "GitHub") == (True, "github")
+    assert core.check_vocab(CTX, cur, "domain", "GitHub") == (True, "github")
     # genuine miss
-    ok, canon = core.check_vocab(cur, "domain", "nope")
+    ok, canon = core.check_vocab(CTX, cur, "domain", "nope")
     assert ok is False and canon is None
 
 
 def test_vocab_values_returns_a_set():
     cur = FakeCursor(["a", "b", "a"])
-    assert core.vocab_values(cur, "domain") == {"a", "b"}
+    assert core.vocab_values(CTX, cur, "domain") == {"a", "b"}
+    assert "tenant_id=:tenant_id" in cur.sql
+    assert "graph_id=:graph_id" in cur.sql
+    assert cur.binds == {"tenant_id": "tenant-a", "graph_id": "graph-a",
+                         "c": "domain"}
+
+
+def test_graph_context_is_validated_and_hashable():
+    assert CTX.binds() == {"tenant_id": "tenant-a", "graph_id": "graph-a"}
+    assert len({CTX, GraphContext("tenant-a", "graph-a", "user-a")}) == 1
+    for values in (("", "g", "u"), ("Tenant A", "g", "u"), ("t", "../g", "u")):
+        try:
+            GraphContext(*values)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("unsafe graph context identifier accepted")
+
+
+def test_core_rejects_missing_or_unverified_context_before_db_access():
+    for bad in (None, {}, "tenant-a"):
+        try:
+            core._scope(bad)
+        except TypeError as exc:
+            assert "GraphContext" in str(exc)
+        else:
+            raise AssertionError("unverified context accepted")
+
+
+def test_local_adapter_uses_explicit_environment(monkeypatch):
+    monkeypatch.setenv("GRAPHMEM_TENANT_ID", "local-tenant")
+    monkeypatch.setenv("GRAPHMEM_GRAPH_ID", "work")
+    monkeypatch.setenv("GRAPHMEM_PRINCIPAL_ID", "local-agent")
+    assert local_single_user_context() == GraphContext(
+        "local-tenant", "work", "local-agent")
 
 
 # -------------------------------------------------------------- standalone ----
