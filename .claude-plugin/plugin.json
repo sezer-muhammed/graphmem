@@ -1,7 +1,7 @@
 {
   "name": "graphmem",
   "version": "0.2.2",
-  "description": "Knowledge-graph memory for Claude — persistent, cross-device, semantic + graph recall (Oracle ADB backend)",
+  "description": "DEPRECATED and unmaintained self-hosted prototype. GraphMem is now a hosted service; see README.",
   "author": { "name": "Muhammed Sezer" },
   "mcpServers": {
     "graphmem": {

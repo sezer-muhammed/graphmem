@@ -1,5 +1,14 @@
 # graphmem 🧠
 
+> [!WARNING]
+> **Deprecated and unmaintained.** This is the original single-user, self-hosted
+> prototype. GraphMem is now developed as a hosted, multi-tenant remote MCP
+> service with per-project isolation and OAuth sign-in; its console is at
+> <https://console.graphmem.sezer.ai>. This repository receives no fixes,
+> including security fixes, and its Claude Code plugin has been withdrawn from
+> the marketplace. Do not use it for new installs. If you already run it, use a
+> least-privilege database user (below), never `ADMIN`.
+
 **Knowledge-graph memory for Claude** — an MCP server + CLI backed by a free-forever
 Oracle Autonomous Database. Everything you tell Claude to remember becomes a node in
 one ever-growing, interlinked graph: semantic recall (vector search), keyword search,
@@ -51,10 +60,20 @@ You need a free Oracle Cloud account (no paid resources are ever created).
      VECTOR support.
 2. **Download the wallet** — DB page → Database connection → Download wallet, set a
    wallet password. Unzip it somewhere private (e.g. `./wallet/`, git-ignored).
-3. **Configure** — `cp .env.example .env`, fill in the ADMIN password, wallet dir
-   (absolute path), wallet password. DSN `<dbname>_low` is in the wallet's
-   `tnsnames.ora` (e.g. `mydb_low`).
-4. **Install + initialize**
+3. **Create a least-privilege app user** — never run GraphMem as `ADMIN`. As
+   ADMIN, once (Database Actions → SQL), create a dedicated schema user and give it
+   only what GraphMem needs:
+   ```sql
+   CREATE USER graphmem_app IDENTIFIED BY "<strong password>" QUOTA 2G ON data;
+   GRANT DB_DEVELOPER_ROLE, CREATE MINING MODEL TO graphmem_app;
+   GRANT EXECUTE ON DBMS_CLOUD TO graphmem_app;  -- init-db loads the ONNX model
+   ```
+   If `graphmem init-db` reports a missing privilege, grant only that one. Then
+   stop using the ADMIN password for GraphMem.
+4. **Configure** — `cp .env.example .env`, fill in the app user (`graphmem_app`)
+   and its password, wallet dir (absolute path), wallet password. DSN
+   `<dbname>_low` is in the wallet's `tnsnames.ora` (e.g. `mydb_low`).
+5. **Install + initialize**
    ```bash
    python3 -m venv .venv && .venv/bin/pip install -e .
    .venv/bin/graphmem init-db     # applies schema + loads the ONNX embed model
@@ -63,16 +82,14 @@ You need a free Oracle Cloud account (no paid resources are ever created).
 
 ## Connect Claude Code (any machine)
 
-### Easiest: install as a Claude Code plugin (bundles MCP + skill + /setup)
+### Claude Code plugin (withdrawn)
 
-```bash
-claude plugin marketplace add sezer-muhammed/graphmem
-claude plugin install graphmem@graphmem
-```
-
-That registers the `graphmem` MCP automatically (runs via `uv`, no venv needed),
-loads a **usage skill** (teaches Claude the librarian discipline), and adds
-**`/graphmem:setup`** which walks through wallet + `.env` provisioning into the
+The plugin is no longer published in this repository's marketplace and will
+not receive updates. Existing installs can be removed with
+`claude plugin uninstall graphmem@graphmem`. Historically it registered the
+`graphmem` MCP automatically (runs via `uv`, no venv needed), loaded a **usage
+skill** (teaches Claude the librarian discipline), and added
+**`/graphmem:setup`**, which walked through wallet + `.env` provisioning into the
 standard per-user location **`~/.graphmem/`** (`.env` + `wallet/`). Config
 resolution order: `$GRAPHMEM_ENV` → `~/.graphmem/.env` → repo root.
 
