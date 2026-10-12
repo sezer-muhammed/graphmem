@@ -1,11 +1,8 @@
 {
   "name": "graphmem",
-  "owner": { "name": "Muhammed Sezer" },
-  "plugins": [
-    {
-      "name": "graphmem",
-      "source": "./",
-      "description": "Persistent cross-device knowledge-graph memory (MCP + usage skill + setup command)"
-    }
-  ]
+  "owner": {
+    "name": "Muhammed Sezer"
+  },
+  "plugins": [],
+  "description": "Deprecated: the graphmem plugin has been withdrawn. GraphMem is now a hosted service; see README."
 }
